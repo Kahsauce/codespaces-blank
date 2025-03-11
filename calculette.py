@@ -1,36 +1,21 @@
 def calculatrice():
-    def effectuer_operation(operation, a, b):
-        operations = {
-            '+': lambda x, y: x + y,
-            '-': lambda x, y: x - y,
-            '*': lambda x, y: x * y,
-            '/': lambda x, y: x / y if y != 0 else 'Erreur: Division par zéro'
-        }
-        return operations.get(operation, lambda x, y: "Opération non reconnue")(a, b)
+    def effectuer_operation(a, b):
+        return a / b if b != 0 else 'Erreur: Division par zéro'
 
     while True:
-        entree = input("Entrez l'opération suivie des opérandes (exemples: '+ 4 5', '- 7 2', '* 3 4', '/ 10 2') ou 'quitter' pour arrêter: ").strip()
+        entree = input("Entrez deux nombres séparés par un espace pour réaliser la division (ou 'quitter' pour arrêter) : ").strip()
         if entree.lower() == 'quitter':
             print("Calculatrice arrêtée.")
             break
 
         try:
-            operation, a, b = None, None, None
-            for op in ['+', '-', '*', '/']:
-                if op in entree:
-                    operation = op
-                    parties = [part.strip() for part in entree.split(operation)]
-                    if len(parties) != 2:
-                        raise ValueError
-                    a, b = map(float, parties)
-                    break
-            if operation is None:
-                raise ValueError
+            a, b = map(float, entree.split())
         except ValueError:
-            print("Erreur: Veuillez entrer une opération valide suivie de deux nombres.")
+            print("Erreur: Veuillez entrer exactement deux nombres valides.")
             continue
 
-        resultat = effectuer_operation(operation, a, b)
+        resultat = effectuer_operation(a, b)
         print(f"Résultat: {resultat}")
 
-calculatrice()
+if __name__ == "__main__":
+    calculatrice()
