@@ -15,18 +15,17 @@ def calculatrice():
             break
 
         try:
-            if not any(op in entree for op in ['+', '-', '*', '/']):
-                raise ValueError
-            operation = ''
+            operation, a, b = None, None, None
             for op in ['+', '-', '*', '/']:
                 if op in entree:
                     operation = op
+                    parties = [part.strip() for part in entree.split(operation)]
+                    if len(parties) != 2:
+                        raise ValueError
+                    a, b = map(float, parties)
                     break
-            if operation == '':
+            if operation is None:
                 raise ValueError
-            a, b = (x.strip() for x in entree.split(operation))
-            a = float(a)
-            b = float(b)
         except ValueError:
             print("Erreur: Veuillez entrer une opération valide suivie de deux nombres.")
             continue
