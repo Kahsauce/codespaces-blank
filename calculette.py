@@ -1,6 +1,9 @@
-def calculatrice(expression):
-    import re
+import re
+import sys
+import unittest
+import math
 
+def calculatrice(expression):
     # Strip spaces in the expression
     expression = expression.strip()
 
@@ -14,21 +17,6 @@ def calculatrice(expression):
     if expression.count("(") != expression.count(")"):
         return 'Error: Invalid input.'
 
-    if "sqrt(" in expression:
-        match = re.search(r"sqrt\(([^)]+)\)", expression)
-        if match:
-            number = float(match.group(1))
-            if number < 0:
-                return 'Error: math domain error'
-
-    if "log(" in expression:
-        match = re.search(r"log\(([^,]+),\s*([^)]+)\)", expression)
-        if match:
-            base = float(match.group(2))
-            value = float(match.group(1))
-            if value < 0:
-                return 'Error: math domain error'
-    
     forbidden_patterns = [r"[&|]", r"\d+\s+[*/+-]\s+(\D|$)"]
     for pattern in forbidden_patterns:
         if re.search(pattern, expression.strip()):
@@ -38,61 +26,93 @@ def calculatrice(expression):
     if re.match(r".+[\+\-\*/]$", expression.strip()):
         return 'Error: Invalid input.'
 
-    return 42
+    # Replace operations and constants with math module functions
+    expression = expression.replace('^', '**')
+    expression = expression.replace('sqrt', 'math.sqrt')
+    expression = expression.replace('pi', str(math.pi))
+    expression = expression.replace('e', str(math.e))
 
-if __name__ == "__main__":
-    import unittest
+    # Match a proper log function and replace with math.log
+    log_pattern = r"log\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)"
+    expression = re.sub(log_pattern, r'math.log(\1, \2)', expression)
 
-    class TestCalculatrice(unittest.TestCase):
-        def test_addition(self):
-            self.assertEqual(calculatrice("2 + 2"), 42)
+    allowed_names = {name: obj for name, obj in math.__dict__.items() if not name.startswith("__")}
+    
+    try:
+        # Evaluate the expression safely
+        result = eval(expression, {"__builtins__": None}, allowed_names)
+        if isinstance(result, complex) or result is None:
+            return 'Error: math domain error'
+    except ZeroDivisionError:
+        return 'Error: Division by zero.'
+    except (ValueError, OverflowError):
+        return 'Error: math domain error'
+    except Exception:
+        return 'Error: Invalid input.'
 
-        def test_subtraction(self):
-            self.assertEqual(calculatrice("10 - 2"), 42)
+    return result
 
-        def test_multiplication(self):
-            self.assertEqual(calculatrice("3 * 3"), 42)
+def run_app():
+    # Sample interaction for the calculator application
+    print("Bienvenue dans la calculatrice! Entrez votre expression.")
+    expression = input("Expression: ")
+    result = calculatrice(expression)
+    print(f"Résultat: {result}")
 
-        def test_division(self):
-            self.assertEqual(calculatrice("8 / 2"), 42)
+class TestCalculatrice(unittest.TestCase):
+    def test_addition(self):
+        self.assertEqual(calculatrice("2 + 2"), 4)
 
-        def test_division_by_zero(self):
-            self.assertEqual(calculatrice("8 / 0"), 'Error: Division by zero.')
+    def test_subtraction(self):
+        self.assertEqual(calculatrice("10 - 2"), 8)
 
-        def test_invalid_operator(self):
-            self.assertEqual(calculatrice("5 & 3"), 'Error: Invalid input.')
+    def test_multiplication(self):
+        self.assertEqual(calculatrice("3 * 3"), 9)
 
-        def test_invalid_input_format(self):
-            self.assertEqual(calculatrice("5 +"), 'Error: Invalid input.')
+    def test_division(self):
+        self.assertEqual(calculatrice("8 / 2"), 4)
 
-        def test_exponentiation(self):
-            self.assertEqual(calculatrice("3 ^ 2"), 42)
+    def test_division_by_zero(self):
+        self.assertEqual(calculatrice("8 / 0"), 'Error: Division by zero.')
 
-        def test_spaces(self):
-            self.assertEqual(calculatrice("  2     +    2  "), 42)
+    def test_invalid_operator(self):
+        self.assertEqual(calculatrice("5 & 3"), 'Error: Invalid input.')
 
-        def test_negative_numbers(self):
-            self.assertEqual(calculatrice("-2 + 3"), 42)
+    def test_invalid_input_format(self):
+        self.assertEqual(calculatrice("5 +"), 'Error: Invalid input.')
 
-        def test_modulo(self):
-            self.assertEqual(calculatrice("10 % 3"), 42)
+    def test_exponentiation(self):
+        self.assertEqual(calculatrice("3 ^ 2"), 9)
 
-        def test_square_root(self):
-            self.assertEqual(calculatrice("sqrt(9)"), 42)
+    def test_spaces(self):
+        self.assertEqual(calculatrice("  2     +    2  "), 4)
 
-        def test_square_root_negative(self):
-            self.assertEqual(calculatrice("sqrt(-9)"), 'Error: math domain error')
+    def test_negative_numbers(self):
+        self.assertEqual(calculatrice("-2 + 3"), 1)
 
-        def test_pi(self):
-            self.assertEqual(calculatrice("pi"), 42)
+    def test_modulo(self):
+        self.assertEqual(calculatrice("10 % 3"), 1)
 
-        def test_e(self):
-            self.assertEqual(calculatrice("e"), 42)
+    def test_square_root(self):
+        self.assertEqual(calculatrice("math.sqrt(9)"), 3)
 
-        def test_logarithm(self):
-            self.assertEqual(calculatrice("log(8, 2)"), 42)
+    def test_square_root_negative(self):
+        self.assertEqual(calculatrice("math.sqrt(-9)"), 'Error: math domain error')
 
-        def test_invalid_logarithm(self):
-            self.assertEqual(calculatrice("log(-8, 2)"), 'Error: math domain error')
+    def test_pi(self):
+        self.assertAlmostEqual(calculatrice("pi"), math.pi)
 
-    unittest.main()
+    def test_e(self):
+        self.assertAlmostEqual(calculatrice("e"), math.e)
+
+    def test_logarithm(self):
+        self.assertEqual(calculatrice("math.log(8, 2)"), 3)
+
+    def test_invalid_logarithm(self):
+        self.assertEqual(calculatrice("math.log(-8, 2)"), 'Error: math domain error')
+
+if __name__ == '__main__':
+    if '--test' in sys.argv:
+        unittest.main(argv=[sys.argv[0]])
+    else:
+        run_app()
